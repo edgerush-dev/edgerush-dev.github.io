@@ -165,10 +165,11 @@
           down.</p>
       </div>
       <div class="card">
-        <h3>Low added latency, measured</h3>
+        <h3>Performance, measured</h3>
         <p>Thread-per-core on Tokio, our own HTTP/1 server and client, compiled filter
-          chains, benchmarked beside NGINX, HAProxy, Envoy and Kong doing the same work on
-          the same machine.</p>
+          chains, and a benchmark harness for comparing proxies on the same machine.
+          <a href="benchmark-2026-10-04.html">Our latest published run</a> covers NGINX
+          and HAProxy, with methodology and limitations alongside the results.</p>
       </div>
     </div>
   </section>
@@ -184,11 +185,22 @@
       <li><strong>Upstreams:</strong> load balancing, health checks, timeouts and
         retries</li>
       <li><strong>L4:</strong> TCP and TLS passthrough, PROXY protocol</li>
-      <li><strong>Operations:</strong> Prometheus metrics, a drain on SIGTERM</li>
+      <li><strong>Operations:</strong> Prometheus metrics, JSON access logs, a drain on SIGTERM</li>
+      <li><strong>Config tools:</strong> <code>edgerush explain</code> shows where a request
+        would go and why; <code>edgerush test</code> checks routing expectations for CI</li>
     </ul>
-    <p class="notyet">Not yet: anything Kubernetes, rate limiting, access logs,
+    <p class="notyet">Not yet: anything Kubernetes, rate limiting,
       authentication. The request path comes first, then rate limiting, then the control
       plane and the operator.</p>
+  </section>
+
+<section class="wrap" aria-labelledby="benchmarks">
+    <h2 id="benchmarks">Measured, with context</h2>
+    <div class="card">
+      <p>EdgeRush, NGINX and HAProxy, compared on like for like hardware with the same
+        workload. <a href="benchmark-2026-10-04.html">See the 4 October 2026 results
+        and methodology</a>.</p>
+    </div>
   </section>
 
   <section class="wrap" aria-labelledby="involved">
