@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EdgeRush — a Kubernetes-native API gateway in Rust</title>
-<meta name="description" content="EdgeRush is an open-source, Kubernetes-native API gateway written in Rust: Ingress and Gateway API from one data plane, and cluster-wide rate limiting with no external store.">
+<title>EdgeRush — a Kubernetes-native API gateway</title>
+<meta name="description" content="An open-source API gateway being built for Kubernetes. Explore EdgeRush's goals, working proxy architecture and development benchmarks.">
 <link rel="canonical" href="https://edgerush.dev/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b1020">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://edgerush.dev/">
 <meta property="og:title" content="EdgeRush">
-<meta property="og:description" content="A Kubernetes-native API gateway written in Rust. Open source, Apache-2.0.">
+<meta property="og:description" content="An open-source API gateway being built for Kubernetes. Explore the goals and proxy architecture. Apache-2.0.">
 <style>
   :root {
     color-scheme: dark;
@@ -93,6 +93,8 @@
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem 1.4rem; }
   .card h3 { margin: 0 0 .4rem; font-size: 1.1rem; }
   .card p { margin: 0; color: var(--muted); }
+  .intro { max-width: 46rem; margin: 0 0 1.5rem; color: var(--muted); }
+  .sources { margin: 1.25rem 0 0; color: var(--muted); }
 
   .works { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .5rem 2rem; padding: 0; margin: 0; list-style: none; }
   .works li { padding-left: 1.4rem; position: relative; color: var(--muted); }
@@ -131,22 +133,26 @@
 
 <main>
   <div class="wrap hero">
-    <h1>A Kubernetes-native API gateway, <em>written in Rust</em>.</h1>
-    <p class="lede">An operator, control planes and data planes in one binary; Ingress and
-      Gateway API served from the same data plane; cluster-wide rate limiting with no
-      external store.</p>
+    <h1>A Kubernetes-native <em>API gateway</em>.</h1>
+    <p class="lede">Built around a focused proxy core, with the ambition to bring Ingress
+      and Gateway API together in one data plane. Open source, with low added latency
+      and useful built-in features as first principles.</p>
     <div class="actions">
       <a class="btn primary" href="https://github.com/edgerush-dev/edgerush">View on GitHub</a>
       <a class="btn" href="https://github.com/edgerush-dev/edgerush#trying-it">Try it</a>
+      <a class="btn" href="#architecture">Proxy architecture</a>
     </div>
     <p class="status"><strong>Status: the data plane runs; Kubernetes does not yet.</strong>
-      The proxy serves traffic from a YAML file, the development harness; the control plane,
-      the operator and the rate limiter are still to be built. Not for production. A hobby
+      The proxy serves traffic from a YAML file, the development harness;
+      the operator and control plane are still to be built. Rate limiting is in active
+      development; its architecture is not yet final. Not for production. A hobby
       project with no timelines.</p>
   </div>
 
   <section class="wrap" aria-labelledby="for">
-    <h2 id="for">What it is for</h2>
+    <h2 id="for">What we are working towards</h2>
+    <p class="intro">These are project goals. The proxy works today; Kubernetes integration
+      and rate limiting are still in development.</p>
     <div class="grid">
       <div class="card">
         <h3>One data plane for Ingress and Gateway API</h3>
@@ -159,10 +165,10 @@
           domain.</p>
       </div>
       <div class="card">
-        <h3>Cluster-wide rate limiting with no external store</h3>
-        <p>Counters live in the data plane's memory and are shared between its pods peer to
-          peer, off the request path, and limits keep working when the control plane is
-          down.</p>
+        <h3>Cluster-wide rate limiting</h3>
+        <p>The goal is useful limits across a deployment without an external counter store.
+          The design and implementation are still in progress; a public architecture
+          write-up will follow once they settle.</p>
       </div>
       <div class="card">
         <h3>Performance, measured</h3>
@@ -170,6 +176,29 @@
           chains, and a benchmark harness for comparing proxies on the same machine.
           <a href="benchmark-2026-10-04.html">Our latest published run</a> covers NGINX
           and HAProxy, with methodology and limitations alongside the results.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" aria-labelledby="why">
+    <h2 id="why">Why build another gateway?</h2>
+    <p class="intro">EdgeRush starts from a frustration with a fragmented API gateway
+      market: the combination a team needs can be spread across products, paid tiers and
+      custom plugins. We want a coherent, open-source gateway that makes common ingress
+      needs straightforward to operate.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Useful features in the open</h3>
+        <p>Our ambition is to make core gateway capabilities available together under
+          Apache-2.0, without putting essential features behind a paywall. Ingress and
+          Gateway API should coexist so teams can adopt at their own pace.</p>
+      </div>
+      <div class="card">
+        <h3>A focused request path</h3>
+        <p>Bloated plugin architectures can add dispatch, allocation and integration costs
+          to every request. We aim to cover common needs with built-in features and
+          compiled configuration, keeping unnecessary work out of the request path.
+          Performance remains something to measure with features enabled.</p>
       </div>
     </div>
   </section>
@@ -189,9 +218,64 @@
       <li><strong>Config tools:</strong> <code>edgerush explain</code> shows where a request
         would go and why; <code>edgerush test</code> checks routing expectations for CI</li>
     </ul>
-    <p class="notyet">Not yet: anything Kubernetes, rate limiting,
-      authentication. The request path comes first, then rate limiting, then the control
-      plane and the operator.</p>
+    <p class="notyet">Still to come: Kubernetes integration and authentication. Rate
+      limiting is in progress and is not presented here as a finished capability.</p>
+  </section>
+
+  <section class="wrap" aria-labelledby="architecture">
+    <h2 id="architecture">Inside the proxy</h2>
+    <p class="intro">The proxy architecture is mostly settled. This overview describes
+      the implemented data plane, currently driven by YAML for development and testing.
+      Kubernetes controllers and the evolving rate limiter are outside this overview.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Connections stay with a worker</h3>
+        <p>The runtime uses a thread per core, each running a single-threaded Tokio runtime.
+          Once assigned, a connection stays with its worker, alongside that worker's
+          upstream pools. This keeps connection state local instead of moving requests
+          between runtime threads.</p>
+      </div>
+      <div class="card">
+        <h3>Several protocols, one request core</h3>
+        <p>HTTP/1.1, HTTP/2 and HTTP/3 adapters feed a shared request core. EdgeRush has
+          its own HTTP/1 server and client, uses h2 for HTTP/2 and quiche for HTTP/3.
+          Backends speak HTTP/1.1 or HTTP/2; the client's protocol does not dictate the
+          backend's protocol.</p>
+      </div>
+      <div class="card">
+        <h3>Compile before serving</h3>
+        <p>Configuration becomes per-listener routers, rule actions and resolved upstream
+          references. Routing and built-in filters are separate from network I/O. The
+          request core normalises the host and path before matching, so routing and
+          forwarding use the same interpretation unless a configured rewrite changes it.</p>
+      </div>
+      <div class="card">
+        <h3>Publish configuration as a snapshot</h3>
+        <p>A reload publishes the compiled configuration atomically. A request reads one
+          snapshot to make its routing decision and retains the rule it needs. Listening
+          sockets and upstream connections live outside those snapshots, so replacing
+          routing configuration does not require restarting the proxy.</p>
+      </div>
+      <div class="card">
+        <h3>Stream through pooled upstreams</h3>
+        <p>Request and response bodies stream between client and backend. Worker-local
+          pools reuse upstream connections; load balancing and health checks choose
+          endpoints. Timeouts and retry budgets bound attempts. WebSockets become tunnels
+          after their handshake; TCP and SNI-routed TLS passthrough have a separate L4 path.</p>
+      </div>
+      <div class="card">
+        <h3>Make behaviour inspectable</h3>
+        <p>Prometheus metrics, JSON access logs and graceful draining support operation.
+          The offline <code>explain</code> and <code>test</code> commands use the request
+          core to show routing decisions and check configuration expectations without
+          starting a proxy.</p>
+      </div>
+    </div>
+    <p class="sources">Explore the implementation:
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/proxy">proxy and protocol adapters</a>,
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/config">configuration compiler</a>,
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/router">router</a> and
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/explain">offline inspection tools</a>.</p>
   </section>
 
 <section class="wrap" aria-labelledby="benchmarks">
