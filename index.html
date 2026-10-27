@@ -142,17 +142,18 @@
       <a class="btn" href="https://github.com/edgerush-dev/edgerush#trying-it">Try it</a>
       <a class="btn" href="#architecture">Proxy architecture</a>
     </div>
-    <p class="status"><strong>Status: the data plane runs; Kubernetes does not yet.</strong>
-      The proxy serves traffic from a YAML file, the development harness;
-      the operator and control plane are still to be built. Rate limiting is in active
-      development; its architecture is not yet final. Not for production. A hobby
-      project with no timelines.</p>
+    <p class="status"><strong>Status: the data plane runs; Kubernetes is arriving.</strong>
+      The proxy serves traffic from a YAML file, the development harness, and in a cluster
+      follows Services' endpoints itself. Rate limiting runs, each pod on its own or through
+      EdgeRush's rate-limiting service. The control plane translates Ingresses but does not
+      yet hand its config to data planes, and the operator is still to be built. Not for
+      production. A hobby project with no timelines.</p>
   </div>
 
   <section class="wrap" aria-labelledby="for">
     <h2 id="for">What we are working towards</h2>
-    <p class="intro">These are project goals. The proxy works today; Kubernetes integration
-      and rate limiting are still in development.</p>
+    <p class="intro">These are project goals. The proxy and rate limiting work today;
+      Kubernetes integration is under way.</p>
     <div class="grid">
       <div class="card">
         <h3>One data plane for Ingress and Gateway API</h3>
@@ -165,10 +166,10 @@
           domain.</p>
       </div>
       <div class="card">
-        <h3>Cluster-wide rate limiting</h3>
-        <p>The goal is useful limits across a deployment without an external counter store.
-          The design and implementation are still in progress; a public architecture
-          write-up will follow once they settle.</p>
+        <h3>Rate limiting, per pod or cluster-wide</h3>
+        <p>Limits enforced by each pod on its own, or across the cluster by EdgeRush's own
+          rate-limiting service, which keeps its counts in memory: no external store to run.
+          Limits keep working when the control plane is down.</p>
       </div>
       <div class="card">
         <h3>Performance, measured</h3>
@@ -215,18 +216,59 @@
         retries</li>
       <li><strong>L4:</strong> TCP and TLS passthrough, PROXY protocol</li>
       <li><strong>Operations:</strong> Prometheus metrics, JSON access logs, a drain on SIGTERM</li>
+      <li><strong>Rate limiting:</strong> token-bucket limits on routes, enforced per pod or
+        by EdgeRush's rate-limiting service; dry runs; 429 with <code>Retry-After</code></li>
+      <li><strong>Kubernetes, begun:</strong> <code>edgerush controller</code> translates
+        Ingresses as the cluster changes; the data plane follows EndpointSlices itself</li>
       <li><strong>Config tools:</strong> <code>edgerush explain</code> shows where a request
-        would go and why; <code>edgerush test</code> checks routing expectations for CI</li>
+        would go and why; <code>edgerush test</code> checks routing expectations for CI;
+        <code>edgerush validate</code> translates Kubernetes manifests offline</li>
     </ul>
-    <p class="notyet">Still to come: Kubernetes integration and authentication. Rate
-      limiting is in progress and is not presented here as a finished capability.</p>
+    <p class="notyet">Still to come: the control plane's config reaching data planes, the
+      operator, Gateway API and authentication.</p>
+  </section>
+
+  <section class="wrap" aria-labelledby="ratelimiting">
+    <h2 id="ratelimiting">Rate limiting, one mode per data plane</h2>
+    <p class="intro">Limits are named on route rules and keyed by the client's address.
+      A request under several limits is decided under all of them at once, and a dry run
+      counts without refusing. How limits are enforced is a choice made once for each data
+      plane.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Off, by default</h3>
+        <p>Limits are compiled and checked but none is enforced, and nothing runs on the
+          request path. Turning limiting on or off needs no edit to the routes.</p>
+      </div>
+      <div class="card">
+        <h3>Local: each pod on what it sees</h3>
+        <p>No service to run. A pod's workers share each key's bucket, a single atomic word
+          updated by compare-and-swap, so a decision takes no lock. A client spread over
+          several pods can get up to that many times its limit.</p>
+      </div>
+      <div class="card">
+        <h3>Synchronous: one owner decides</h3>
+        <p>Each key has an owner in EdgeRush's rate-limiting service, three pods or more,
+          which decides every request; each worker keeps its own stream to each pod. The
+          pods copy their keys to one another, so a pod's keys carry on when it leaves.</p>
+      </div>
+      <div class="card">
+        <h3>Stated behaviour when the service is unreachable</h3>
+        <p>A request waits for its owner at most a configured time, and a breaker cuts off
+          an owner that keeps failing. What happens meanwhile is stated, never assumed:
+          allow, deny, or the data plane's own buckets until the owner answers.</p>
+      </div>
+    </div>
+    <p class="sources">Explore the implementation:
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/ratelimit">the limiters</a> and
+      <a href="https://github.com/edgerush-dev/edgerush/tree/main/crates/ratelimit-service">the rate-limiting service</a>.</p>
   </section>
 
   <section class="wrap" aria-labelledby="architecture">
     <h2 id="architecture">Inside the proxy</h2>
     <p class="intro">The proxy architecture is mostly settled. This overview describes
       the implemented data plane, currently driven by YAML for development and testing.
-      Kubernetes controllers and the evolving rate limiter are outside this overview.</p>
+      The Kubernetes controller and rate limiting are outside this overview.</p>
     <div class="grid">
       <div class="card">
         <h3>Connections stay with a worker</h3>
