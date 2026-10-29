@@ -10,8 +10,8 @@ browser.
 
 `index.html` describes the project goals, current feature set, rate-limiting modes and
 implemented proxy architecture. Keep ambitions distinct from working features: the
-rate-limiting section describes the `off`, `local` and `synchronous` modes as built, and
-leaves out the parked asynchronous mode. The proxy overview is grounded
+rate-limiting section describes the `off`, `local`, `synchronous` and `asynchronous` modes,
+all built. The proxy overview is grounded
 in `crates/proxy`, `crates/config`, `crates/router` and `crates/explain` in the code repository,
 and the parent workspace's `docs/03-data-plane.md` and protocol docs. Check implementation
 as well as design docs before expanding it. Preserve the script-free, self-contained style.
