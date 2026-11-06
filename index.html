@@ -145,7 +145,8 @@
     <p class="status"><strong>Status: the data plane runs, and the control plane runs it in a
       cluster; the operator is next.</strong>
       The proxy serves traffic from a YAML file, the development harness, or from a control
-      plane that translates Ingresses in a cluster and streams the config to it. Rate
+      plane that translates a cluster's Ingresses and Gateway API objects and streams the
+      config to it. Rate
       limiting runs, each pod on its own or through EdgeRush's rate-limiting service. Not
       for production. A hobby project with no timelines.</p>
   </div>
@@ -219,15 +220,16 @@
       <li><strong>Rate limiting:</strong> token-bucket limits on routes, enforced per pod or
         by EdgeRush's rate-limiting service; dry runs; 429 with <code>Retry-After</code></li>
       <li><strong>Kubernetes:</strong> <code>edgerush controller</code> translates Ingresses
-        as the cluster changes and streams the config to data planes over mutual TLS; Ingress
-        status and an admission webhook; the data plane follows EndpointSlices itself,
+        and Gateway API objects (Gateways, ListenerSets, HTTP, gRPC, TLS and TCP routes,
+        BackendTLSPolicies) as the cluster changes and streams the config to data planes over
+        mutual TLS; their status and an admission webhook; the data plane follows EndpointSlices itself,
         prefers endpoints in its own zone, and never sends to the gateway's own pods</li>
       <li><strong>Config tools:</strong> <code>edgerush explain</code> shows where a request
         would go and why; <code>edgerush test</code> checks routing expectations for CI;
         <code>edgerush validate</code> translates Kubernetes manifests offline</li>
     </ul>
-    <p class="notyet">Still to come: the operator, Gateway API, ingress-nginx's annotations
-      and authentication.</p>
+    <p class="notyet">Still to come: the operator, and with it Gateway API's conformance runs;
+      ingress-nginx's annotations; authentication; CORS.</p>
   </section>
 
   <section class="wrap" aria-labelledby="ratelimiting">
