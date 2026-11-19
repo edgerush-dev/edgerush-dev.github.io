@@ -142,13 +142,9 @@
       <a class="btn" href="https://github.com/edgerush-dev/edgerush#trying-it">Try it</a>
       <a class="btn" href="#architecture">Proxy architecture</a>
     </div>
-    <p class="status"><strong>Status: the operator runs a gateway in a cluster from two
-      resources, and Gateway API's conformance suite runs against it.</strong>
-      A <code>ControlPlane</code> and a <code>DataPlane</code> applied, or a Gateway written
-      alone, become a control plane that translates the cluster's Ingresses and Gateway API
-      objects and data planes that serve them. Rate limiting runs, each pod on its own or
-      through EdgeRush's rate-limiting service. No images are published yet: it is built
-      from source. Not for production. A hobby project with no timelines.</p>
+    <p class="status"><strong>Status: it runs in a cluster, set up by its operator, and
+      passes Gateway API's core conformance tests.</strong> No images are published yet, so
+      it is built from source. Not for production. A hobby project with no timelines.</p>
   </div>
 
   <section class="wrap" aria-labelledby="for">
@@ -208,37 +204,21 @@
   <section class="wrap" aria-labelledby="works">
     <h2 id="works">What works today</h2>
     <ul class="works">
-      <li><strong>Protocols:</strong> HTTP/1.1, HTTP/2 and HTTP/3 (QUIC) from clients; gRPC;
-        WebSocket</li>
-      <li><strong>TLS</strong> on BoringSSL: certificates chosen by SNI, mTLS both ways</li>
-      <li><strong>Routing:</strong> Gateway API's matches and precedence; redirects, rewrites
-        and mirrors</li>
-      <li><strong>Upstreams:</strong> load balancing, health checks, timeouts and
-        retries</li>
-      <li><strong>L4:</strong> TCP and TLS passthrough, PROXY protocol</li>
-      <li><strong>Operations:</strong> Prometheus metrics, JSON access logs, a drain on SIGTERM</li>
-      <li><strong>Rate limiting:</strong> token buckets, fixed windows and exact rolling
-        windows on routes, enforced per pod or by EdgeRush's rate-limiting service; dry runs;
-        429 with <code>Retry-After</code></li>
-      <li><strong>Operator:</strong> <code>ControlPlane</code> and <code>DataPlane</code>
-        resources become the control plane, data planes, their GatewayClass, IngressClass and
-        Gateway and autoscalers, on certificates the control plane issues; a Gateway written
-        alone gets a data plane of its own, within limits the platform team sets</li>
-      <li><strong>Gateway API conformance:</strong> the upstream suite runs in kind;
-        GATEWAY-HTTP, GATEWAY-GRPC, GATEWAY-TLS and GATEWAY-TCP pass their core tests, and
-        each GatewayClass lists the extended features that pass, and only those</li>
-      <li><strong>Kubernetes:</strong> <code>edgerush controller</code> translates Ingresses
-        and Gateway API objects (Gateways, ListenerSets, HTTP, gRPC, TLS, TCP and UDP routes,
-        BackendTLSPolicies) as the cluster changes and streams the config to data planes over
-        mutual TLS; their status and an admission webhook; the data plane follows EndpointSlices itself,
-        prefers endpoints in its own zone, and never sends to the gateway's own pods</li>
-      <li><strong>Config tools:</strong> <code>edgerush explain</code> shows where a request
-        would go and why; <code>edgerush test</code> checks routing expectations for CI;
-        <code>edgerush validate</code> translates Kubernetes manifests offline</li>
+      <li><strong>Protocols:</strong> HTTP/1.1, HTTP/2, HTTP/3, gRPC, WebSocket</li>
+      <li><strong>L4:</strong> TCP, TLS passthrough, UDP, PROXY protocol</li>
+      <li><strong>TLS</strong> on BoringSSL, mTLS to clients and backends</li>
+      <li><strong>Routing:</strong> Gateway API matching, redirects, rewrites, mirrors</li>
+      <li><strong>Backends:</strong> load balancing, health checks, timeouts, retries</li>
+      <li><strong>Rate limiting:</strong> token bucket, fixed or rolling window</li>
+      <li><strong>Kubernetes:</strong> Ingress and Gateway API from one data plane</li>
+      <li><strong>Operator:</strong> two resources make a working gateway</li>
+      <li><strong>Conformance:</strong> Gateway API core tests pass for HTTP, gRPC, TLS, TCP</li>
+      <li><strong>Operations:</strong> Prometheus metrics, JSON access logs, graceful drain</li>
+      <li><strong>Tools:</strong> <code>explain</code>, <code>test</code> and
+        <code>validate</code> check configs offline</li>
     </ul>
-    <p class="notyet">Still to come: published images; the rate-limiting service deployed in
-      a cluster, and <code>RateLimitPolicy</code>, being built; ingress-nginx's annotations;
-      authentication; CORS.</p>
+    <p class="notyet">Still to come: published images, rate limiting across a cluster's pods
+      in Kubernetes, ingress-nginx annotations, authentication, CORS.</p>
   </section>
 
   <section class="wrap" aria-labelledby="ratelimiting">
