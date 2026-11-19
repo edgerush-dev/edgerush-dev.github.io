@@ -142,19 +142,19 @@
       <a class="btn" href="https://github.com/edgerush-dev/edgerush#trying-it">Try it</a>
       <a class="btn" href="#architecture">Proxy architecture</a>
     </div>
-    <p class="status"><strong>Status: the data plane runs, and the control plane runs it in a
-      cluster; the operator is next.</strong>
-      The proxy serves traffic from a YAML file, the development harness, or from a control
-      plane that translates a cluster's Ingresses and Gateway API objects and streams the
-      config to it. Rate
-      limiting runs, each pod on its own or through EdgeRush's rate-limiting service. Not
-      for production. A hobby project with no timelines.</p>
+    <p class="status"><strong>Status: the operator runs a gateway in a cluster from two
+      resources, and Gateway API's conformance suite runs against it.</strong>
+      A <code>ControlPlane</code> and a <code>DataPlane</code> applied, or a Gateway written
+      alone, become a control plane that translates the cluster's Ingresses and Gateway API
+      objects and data planes that serve them. Rate limiting runs, each pod on its own or
+      through EdgeRush's rate-limiting service. No images are published yet: it is built
+      from source. Not for production. A hobby project with no timelines.</p>
   </div>
 
   <section class="wrap" aria-labelledby="for">
     <h2 id="for">What we are working towards</h2>
-    <p class="intro">These are project goals. The proxy, rate limiting and the control
-      plane work today; the operator is next.</p>
+    <p class="intro">These are project goals. The proxy, rate limiting, the control plane
+      and the operator work today; the rate-limiting service deployed in a cluster is next.</p>
     <div class="grid">
       <div class="card">
         <h3>One data plane for Ingress and Gateway API</h3>
@@ -164,7 +164,7 @@
         <h3>Operator-driven</h3>
         <p><code>ControlPlane</code> and <code>DataPlane</code> resources become Deployments
           and Services; one control plane can drive many data planes, each its own failure
-          domain.</p>
+          domain. A Gateway written alone gets a data plane of its own.</p>
       </div>
       <div class="card">
         <h3>Rate limiting, per pod or cluster-wide</h3>
@@ -217,10 +217,18 @@
         retries</li>
       <li><strong>L4:</strong> TCP and TLS passthrough, PROXY protocol</li>
       <li><strong>Operations:</strong> Prometheus metrics, JSON access logs, a drain on SIGTERM</li>
-      <li><strong>Rate limiting:</strong> token-bucket limits on routes, enforced per pod or
-        by EdgeRush's rate-limiting service; dry runs; 429 with <code>Retry-After</code></li>
+      <li><strong>Rate limiting:</strong> token buckets, fixed windows and exact rolling
+        windows on routes, enforced per pod or by EdgeRush's rate-limiting service; dry runs;
+        429 with <code>Retry-After</code></li>
+      <li><strong>Operator:</strong> <code>ControlPlane</code> and <code>DataPlane</code>
+        resources become the control plane, data planes, their GatewayClass, IngressClass and
+        Gateway and autoscalers, on certificates the control plane issues; a Gateway written
+        alone gets a data plane of its own, within limits the platform team sets</li>
+      <li><strong>Gateway API conformance:</strong> the upstream suite runs in kind;
+        GATEWAY-HTTP, GATEWAY-GRPC, GATEWAY-TLS and GATEWAY-TCP pass their core tests, and
+        each GatewayClass lists the extended features that pass, and only those</li>
       <li><strong>Kubernetes:</strong> <code>edgerush controller</code> translates Ingresses
-        and Gateway API objects (Gateways, ListenerSets, HTTP, gRPC, TLS and TCP routes,
+        and Gateway API objects (Gateways, ListenerSets, HTTP, gRPC, TLS, TCP and UDP routes,
         BackendTLSPolicies) as the cluster changes and streams the config to data planes over
         mutual TLS; their status and an admission webhook; the data plane follows EndpointSlices itself,
         prefers endpoints in its own zone, and never sends to the gateway's own pods</li>
@@ -228,15 +236,17 @@
         would go and why; <code>edgerush test</code> checks routing expectations for CI;
         <code>edgerush validate</code> translates Kubernetes manifests offline</li>
     </ul>
-    <p class="notyet">Still to come: the operator, and with it Gateway API's conformance runs;
-      ingress-nginx's annotations; authentication; CORS.</p>
+    <p class="notyet">Still to come: published images; the rate-limiting service deployed in
+      a cluster, and <code>RateLimitPolicy</code>, being built; ingress-nginx's annotations;
+      authentication; CORS.</p>
   </section>
 
   <section class="wrap" aria-labelledby="ratelimiting">
     <h2 id="ratelimiting">Rate limiting, one mode per data plane</h2>
-    <p class="intro">Limits are named on route rules and keyed by the client's address.
-      A request under several limits is decided under all of them at once, and a dry run
-      counts without refusing. How limits are enforced is a choice made once for each data
+    <p class="intro">Limits are named on route rules and keyed by the client's address,
+      each a token bucket, a fixed window or an exact rolling window. A request under
+      several limits is decided under all of them at once, and a dry run counts without
+      refusing. How limits are enforced is a choice made once for each data
       plane.</p>
     <div class="grid">
       <div class="card">
@@ -260,7 +270,8 @@
         <h3>Asynchronous: each pod from its copy</h3>
         <p>Each pod decides every request from its own copy of each key, waiting on no one,
           and shares what it admitted through the rate-limiting service every cycle. A burst
-          on a key it has not heard of yet may overshoot a little.</p>
+          on a key it has not heard of yet may overshoot a little. Its limits are token
+          buckets.</p>
       </div>
       <div class="card">
         <h3>Stated behaviour when the service is unreachable</h3>
@@ -277,8 +288,9 @@
   <section class="wrap" aria-labelledby="architecture">
     <h2 id="architecture">Inside the proxy</h2>
     <p class="intro">The proxy architecture is mostly settled. This overview describes
-      the implemented data plane, currently driven by YAML for development and testing.
-      The Kubernetes controller and rate limiting are outside this overview.</p>
+      the implemented data plane, whether its config comes from the control plane in a
+      cluster or from YAML for development and testing. The operator, the control plane and
+      rate limiting are outside this overview.</p>
     <div class="grid">
       <div class="card">
         <h3>Connections stay with a worker</h3>
